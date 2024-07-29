@@ -36,25 +36,30 @@ proc filter-output (country_code) {
 
 # Aggregate
 mkfifo mypipe
-mkfifo count
-./aggregate-subnets.py < mypipe &
+fork { ./aggregate-subnets.py < mypipe }
 
 cleanup() {
   rm mypipe
-  rm count
-  kill $(jobs -p)
+  var j = $(jobs -p)
+  if test -n $j {
+    kill $(jobs -p)
+  }
 }
 trap cleanup EXIT INT TERM
 
+source --builtin draft-synch.ysh
+
+sema-new (0, &s)
+
 for key, val in (rirs) {
-  {
-    curl -s $val | filter-output $country_code >> mypipe
-    echo '1' >> count
-  } &
+  fork {
+    try { curl -s $val | filter-output $country_code >> mypipe }
+    sema-up (s)
+  }
 }
+
 var c = 0
 while (c < len(rirs)) {
-  read -n 1 < count
+  sema-down (s)
   setvar c += 1
 }
-cleanup
