@@ -16,10 +16,10 @@ var rirs = {
 
 func rangeToSubnet(range) {
   var i = range
-  var c = 0
-  while (i > 0) {
+  var c = 32
+  while (i > 1) {
     setvar i = i >> 1
-    setvar c += 1
+    setvar c -= 1
   }
   return (c)
 }
