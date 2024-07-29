@@ -39,6 +39,13 @@ mkfifo mypipe
 mkfifo count
 ./aggregate-subnets.py < mypipe &
 
+cleanup() {
+  rm mypipe
+  rm count
+  kill $(jobs -p)
+}
+trap cleanup EXIT INT TERM
+
 for key, val in (rirs) {
   {
     curl -s $val | filter-output $country_code >> mypipe
@@ -50,5 +57,4 @@ while (c < len(rirs)) {
   read -n 1 < count
   setvar c += 1
 }
-rm mypipe
-rm count
+cleanup
