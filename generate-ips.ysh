@@ -28,16 +28,21 @@ proc filter-output {
   }
 }
 
-proc get-infos (name, url) {
-  curl -q $url | filter-output
-  echo "$name is done"
-}
-
 # Aggregate
 mkfifo mypipe
+mkfifo count
 ./aggregate-subnets.py < mypipe > IPs &
 
 for key, val in (rirs) {
-  get-infos $key $val >> mypipe &
+  {
+    curl -s $val | filter-output >> mypipe
+    echo '1' >> count
+  } &
+}
+var c = 0
+while (c < len(rirs)) {
+  read -n 1 < count
+  setvar c += 1
 }
 rm mypipe
+rm count
