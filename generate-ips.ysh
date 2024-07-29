@@ -37,7 +37,7 @@ proc filter-output (country_code) {
 # Aggregate
 mkfifo mypipe
 mkfifo count
-./aggregate-subnets.py < mypipe > IPs &
+./aggregate-subnets.py < mypipe &
 
 for key, val in (rirs) {
   {
