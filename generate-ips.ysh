@@ -1,0 +1,43 @@
+#!/usr/bin/env ysh
+
+var rirs = {
+  afrinic: "https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest",
+  apnic: "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-extended-latest",
+  arin: "https://ftp.arin.net/pub/stats/arin/delegated-arin-extended-latest",
+  lacnic: "https://ftp.lacnic.net/pub/stats/lacnic/delegated-lacnic-extended-latest",
+  ripe: "https://ftp.lacnic.net/pub/stats/ripencc/delegated-ripencc-latest",
+}
+
+func rangeToSubnet(range) {
+  var i = range
+  var c = 0
+  while (i > 0) {
+    setvar i = i >> 1
+    setvar c += 1
+  }
+  return (c)
+}
+
+proc filter-output {
+  while read -r line {
+    var l = line => split("|")
+    if (len(l) < 4) { continue }
+    if (l[1] === "CN" and l[2] === "ipv4") {
+      echo "$[l[3]]/$[rangeToSubnet(l[4])]"
+    }
+  }
+}
+
+proc get-infos (name, url) {
+  curl -q $url | filter-output
+  echo "$name is done"
+}
+
+# Aggregate
+mkfifo mypipe
+./aggregate-subnets.py < mypipe > IPs &
+
+for key, val in (rirs) {
+  get-infos $key $val >> mypipe &
+}
+rm mypipe
