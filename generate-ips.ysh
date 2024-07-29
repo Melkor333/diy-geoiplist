@@ -1,5 +1,11 @@
 #!/usr/bin/env ysh
 
+if (len(ARGV) < 1) {
+  echo "Need a country country_code"
+  exit 1
+}
+var country_code = ARGV[0]
+
 var rirs = {
   afrinic: "https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-extended-latest",
   apnic: "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-extended-latest",
@@ -18,11 +24,11 @@ func rangeToSubnet(range) {
   return (c)
 }
 
-proc filter-output {
+proc filter-output (country_code) {
   while read -r line {
     var l = line => split("|")
     if (len(l) < 4) { continue }
-    if (l[1] === "CN" and l[2] === "ipv4") {
+    if (l[1] === country_code and l[2] === "ipv4") {
       echo "$[l[3]]/$[rangeToSubnet(l[4])]"
     }
   }
@@ -35,7 +41,7 @@ mkfifo count
 
 for key, val in (rirs) {
   {
-    curl -s $val | filter-output >> mypipe
+    curl -s $val | filter-output $country_code >> mypipe
     echo '1' >> count
   } &
 }
